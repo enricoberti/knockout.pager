@@ -9,17 +9,17 @@
 
     templateEngine.addTemplate("ko_pager_links", "\
         <div class='pager full' data-bind='if: totalPages() > 1'>\
-	        <span class='number-of-pages'>Page <i data-bind='text: page()' /> of <i data-bind='text: totalPages()' /></span>\
-	        <span class='first-page-link'><a title='First Page' class='pager-button fa fa-chevron-left' href='#' data-bind='click: page.bind($data, 1), enable: page() > 1, css: {disabled: page() == 1}'></a></span>\
+	        <span class='number-of-pages'><span data-bind='text: i18n().PAGE'></span> <i data-bind='text: page()' /> <span data-bind='text: i18n().OF'></span> <i data-bind='text: totalPages()' /></span>\
+	        <span class='first-page-link'><a data-bind='attr: {title: i18n().FIRST_PAGE}' class='pager-button fa fa-chevron-left' href='#' data-bind='click: page.bind($data, 1), enable: page() > 1, css: {disabled: page() == 1}'></a></span>\
 	        <span class='pager-pages' data-bind='foreach: relativePages'>\
 		        <span class='pager-page'><a class='pager-button' href='#' data-bind='click: $parent.page.bind($parent, $data), text: $data, css: { selected: $parent.page() == $data }'></a></span>\
 	        </span>\
-	        <span class='last-page-link'><a title='Last Page' class='pager-button fa fa-chevron-right' href='#' data-bind='click: page.bind($data, totalPages()), enable: page() < totalPages(), css: { disabled: page() == totalPages() }'></a></span>\
+	        <span class='last-page-link'><a data-bind='attr: {title: i18n().LAST_PAGE}' class='pager-button fa fa-chevron-right' href='#' data-bind='click: page.bind($data, totalPages()), enable: page() < totalPages(), css: { disabled: page() == totalPages() }'></a></span>\
         </div>\
         <div class='pager mini' data-bind='if: totalPages() > 1'>\
-	        <span class='previous-page-link'><a title='Previous Page' class='pager-button fa fa-chevron-left' href='#' data-bind='click: page.bind($data,  page() - 1), enable: page() > 1, css: {disabled: page() == 1}'></a></span>\
+	        <span class='previous-page-link'><a data-bind='attr: {title: i18n().PREVIOUS_PAGE}' class='pager-button fa fa-chevron-left' href='#' data-bind='click: page.bind($data,  page() - 1), enable: page() > 1, css: {disabled: page() == 1}'></a></span>\
 		        <span class='number-of-pages'><i data-bind='text: page()' /> of <i data-bind='text: totalPages()' /></span>\
-	        <span class='next-page-link'><a title='Next Page' class='pager-button fa fa-chevron-right' href='#' data-bind='click: page.bind($data, page() + 1), enable: page() < totalPages(), css: { disabled: page() == totalPages() }'></a></span>\
+	        <span class='next-page-link'><a data-bind='attr: {title: i18n().NEXT_PAGE}' class='pager-button fa fa-chevron-right' href='#' data-bind='click: page.bind($data, page() + 1), enable: page() < totalPages(), css: { disabled: page() == totalPages() }'></a></span>\
         </div>\
     ");
 
@@ -29,35 +29,27 @@
                         options: pageSizeOptions, \
                         enable: allowChangePageSize' \
                     data-style='btn-white\'>\
-                    <option>10</option>\
-                    <option>25</option>\
-                    <option>50</option>\
-                    <option>100</option>\
             </select>\
     ");
-    /*
-                        optionsText: 'name', \
-                        optionsValue: 'value', \
-    */
 
     function makeTemplateValueAccessor(pager) {
         return function () {
             return { 'foreach': pager.pagedItems, 'templateEngine': templateEngine };
         };
     }
-    
+
     function defaultPagerIfEmpty(observable) {
         if (observable.pager) return;
         if(ko.isObservable(observable) || !(observable instanceof Function))
             observable.pager = new ko.bindingHandlers.pagedForeach.ClientPager(observable);
-        else 
+        else
             observable.pager = new ko.bindingHandlers.pagedForeach.ServerPager(observable);
     }
 
     function checkItemPerPageBinding(allBindings, pager){
         if (allBindings['pageSize']) {
             pager.itemsPerPage(ko.utils.unwrapObservable(allBindings['pageSize']));
-                
+
             if (ko.isObservable(allBindings['pageSize'])) {
                 allBindings['pageSize'].subscribe(function (newVal) {
                     pager.itemsPerPage(newVal);
@@ -78,7 +70,7 @@
     function checkShowAllPageBinding(allBindings, pager){
         if (allBindings['showAllPageOption']) {
             pager.pagesShowAll(ko.utils.unwrapObservable(allBindings['showAllPageOption']));
-                
+
             if (ko.isObservable(allBindings['showAllPageOption'])) {
                 allBindings['showAllPageOption'].subscribe(function (newVal) {
                     pager.pagesShowAll(newVal);
@@ -90,57 +82,103 @@
         }
     }
 
+    function checkDefaultItemsPerPageBinding(allBindings, pager){
+        if (allBindings['defaultItemsPerPage']) {
+            pager.defaultItemsPerPage(ko.utils.unwrapObservable(allBindings['defaultItemsPerPage']));
+
+            if (ko.isObservable(allBindings['defaultItemsPerPage'])) {
+                allBindings['defaultItemsPerPage'].subscribe(function (newVal) {
+                    pager.defaultItemsPerPage(newVal);
+                });
+                pager.defaultItemsPerPage.subscribe(function (newVal) {
+                    allBindings['defaultItemsPerPage'](newVal);
+                });
+            }
+        }
+    }
+
+    function checkI18NBinding(allBindings, pager){
+        function extend(a, b){
+            for(var key in b)
+                if(b.hasOwnProperty(key))
+                    a[key] = b[key];
+            return a;
+        }
+        var DEFAULTS = {
+            ALL: 'All',
+            PAGE: 'Page',
+            OF: 'of',
+            FIRST_PAGE: 'First paaaa',
+            LAST_PAGE: 'Last page',
+            PREVIOUS_PAGE: 'Previous page',
+            NEXT_PAGE: 'Next page'
+        }
+        if (pager.i18n()){
+            DEFAULTS = extend(DEFAULTS, pager.i18n())
+        }
+        if (allBindings['i18n']) {
+            DEFAULTS = extend(DEFAULTS, allBindings['i18n'])
+        }
+        pager.i18n(DEFAULTS);
+    }
+
     ko.bindingHandlers.pagedForeach = {
         Pager : function (){
             var self = this;
 
+            self.i18n = ko.observable();
+
             self.page = ko.observable(1);
 
             self.pagesShowAll = ko.observable(false);
-            self.itemsPerPage = ko.observable(10);
+            self.defaultItemsPerPage = ko.observable(10);
+            self.itemsPerPage = ko.observable(self.defaultItemsPerPage());
             self.allowChangePageSize = ko.observable(false);
             self.pageSizeOptions = ko.pureComputed(function(){
                 var items = [];
                 var totalItems = self.totalItems();
                 var showAll = self.pagesShowAll();
-                
+
                 if(!showAll || totalItems > 10) {
                     items.push( 10 );
-                }    
+                }
                 if(!showAll || totalItems > 25) {
                     items.push( 25 );
-                }    
+                }
                 if(!showAll || totalItems > 50) {
                     items.push( 50 );
-                }    
+                }
                 if(!showAll || totalItems > 100) {
                     items.push( 100 );
-                }  
-                
-                if(showAll) {
-                    items.push( 'All' );
                 }
-                return items;       
+                if(showAll) {
+                    items.push( self.i18n().ALL );
+                }
+                return items;
             });
-            
+
+            self.pageSizeOptions.subscribe(function(val){
+                self.itemsPerPage(self.defaultItemsPerPage());
+            }, this, 'awake');
+
             self.totalItems = ko.observable(0);
 
             self.totalPages = ko.pureComputed(function () {
                 return Math.ceil(self.totalItems() / self.itemsPerPageNumber());
             });
-            
+
             self.getPageMethod = ko.observable();
-            
+
             self.itemsPerPageNumber = ko.pureComputed(function(){
                 var itemsPerPage = self.itemsPerPage();
-                if(itemsPerPage === 'All') {
+                if(self.i18n() && itemsPerPage === self.i18n().ALL) {
                     itemsPerPage = self.totalItems();
                 }
                 return parseInt(itemsPerPage);
             });
-            
+
             self.pagedItems = ko.computed(function () {
-                var itemsPerPage = self.itemsPerPageNumber(); 
+                var itemsPerPage = self.itemsPerPageNumber();
                 var page = self.page();
                 if(self.getPageMethod()) {
                     return self.getPageMethod()(itemsPerPage, page);
@@ -180,13 +218,13 @@
         },
         ClientPager: function(observableArray, pager){
             if(!pager) pager = new ko.bindingHandlers.pagedForeach.Pager();
-            
+
             pager.totalItems(ko.utils.unwrapObservable(observableArray).length);
-            
+
             pager.getPageMethod(function(itemsPerPage, page){
                 var array = ko.utils.unwrapObservable(observableArray);
                 var indexOfFirstItemOnCurrentPage = ((page - 1) * itemsPerPage);
-                var pageArray = array.slice(indexOfFirstItemOnCurrentPage, 
+                var pageArray = array.slice(indexOfFirstItemOnCurrentPage,
                                             indexOfFirstItemOnCurrentPage + itemsPerPage);
                 return pageArray;
             });
@@ -196,26 +234,26 @@
                     pager.totalItems(newArray.length);
                     pager.page(1);
                 });
-            
+
             return pager;
         },
         ServerPager: function(getPageMethod, totalItems, pager){
             if(!pager) pager = new ko.bindingHandlers.pagedForeach.Pager();
-            
+
             pager.getPageMethod(getPageMethod);
-            
+
             pager.setTotalItems = function(totItems){
-            
+
                 pager.totalItems(ko.utils.unwrapObservable(totItems));
-            
+
                 if (ko.isObservable(totItems))
                     totItems.subscribe(function (newCount) {
                         pager.totalItems(newCount);
                     });
             };
-            
+
             if(totalItems) pager.setTotalItems(totalItems);
-                
+
             return pager;
         },
         init : function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext){
@@ -242,15 +280,17 @@
             checkItemPerPageBinding(allBindings, observable.pager);
             checkTotalItemsBinding(allBindings, observable.pager);
             checkShowAllPageBinding(allBindings, observable.pager);
+            checkDefaultItemsPerPageBinding(allBindings, observable.pager);
+            checkI18NBinding(allBindings, observable.pager);
             return { 'controlsDescendantBindings': true };
         },
         update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
             var observable = valueAccessor();
             var array = ko.utils.unwrapObservable(observable);
             defaultPagerIfEmpty(observable);
-            
+
             observable.pager.allowChangePageSize(true);
-            
+
             // Empty the element
             while (element.firstChild) ko.removeNode(element.firstChild);
 
@@ -265,13 +305,14 @@
             defaultPagerIfEmpty(observable);
             checkItemPerPageBinding(allBindings, observable.pager);
             checkTotalItemsBinding(allBindings, observable.pager);
+            checkI18NBinding(allBindings, observable.pager);
             return { 'controlsDescendantBindings': true };
         },
         update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
             var observable = valueAccessor();
             var array = ko.utils.unwrapObservable(observable);
             defaultPagerIfEmpty(observable);
-            
+
             // Empty the element
             while (element.firstChild) ko.removeNode(element.firstChild);
 
