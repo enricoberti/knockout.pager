@@ -109,7 +109,7 @@
       ALL: 'All',
       PAGE: 'Page',
       OF: 'of',
-      FIRST_PAGE: 'First paaaa',
+      FIRST_PAGE: 'First page',
       LAST_PAGE: 'Last page',
       PREVIOUS_PAGE: 'Previous page',
       NEXT_PAGE: 'Next page'
